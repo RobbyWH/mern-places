@@ -4,7 +4,7 @@ import './Avatar.css';
 
 interface AvatarInterface {
   className?: string;
-  style?: Object;
+  style?: React.CSSProperties;
   image: string;
   width?: number;
   height?: number;
