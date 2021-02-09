@@ -11,11 +11,11 @@ export enum ValidatorType {
 
 export const VALIDATOR_REQUIRE = () => ({ type: ValidatorType.VALIDATOR_TYPE_REQUIRE });
 export const VALIDATOR_FILE = () => ({ type: ValidatorType.VALIDATOR_TYPE_FILE });
-export const VALIDATOR_MINLENGTH = (val: string) => ({
+export const VALIDATOR_MINLENGTH = (val: number) => ({
   type: ValidatorType.VALIDATOR_TYPE_MINLENGTH,
   val
 });
-export const VALIDATOR_MAXLENGTH = (val: string) => ({
+export const VALIDATOR_MAXLENGTH = (val: number) => ({
   type: ValidatorType.VALIDATOR_TYPE_MAXLENGTH,
   val,
 });

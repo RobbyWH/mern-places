@@ -5,13 +5,14 @@ import './Input.css';
 
 interface InputProps {
   label: string;
-  id?: string;
+  id: string;
   element?: string;
-  type: string;
+  type?: string;
   placeholder?: string;
   rows?: number;
   errorText?: string;
   validators?: Validators;
+  onInput?: (id: string, value: string, isValid: boolean) => void;
 };
 
 
@@ -60,7 +61,8 @@ const Input = ({
   rows = 3,
   element,
   errorText,
-  validators
+  validators,
+  onInput
 }: InputProps) => {
   const [inputState, dispatch] = React.useReducer(inputReducer, initialState);
   const changeHandler = React.useCallback(event => {
@@ -104,16 +106,22 @@ const Input = ({
     inputState.value,
     touchHandler
   ]);
+
+  const {value, isValid, isTouched} = inputState;
+
+  React.useEffect(() => {
+    onInput && onInput(id, value ?? '', isValid ?? false)
+  }, [id, value, isValid, onInput]);
   
   return (
     <div className={`form-control ${
-      !inputState.isValid
-      && inputState.isTouched
+      !isValid
+      && isTouched
       && 'form-control--invalid'
     }`}>
       <label htmlFor={id}>{label}</label>
       {elementHtml}
-      {!inputState.isValid && inputState.isTouched && <p>{errorText}</p>}
+      {!isValid && isTouched && <p>{errorText}</p>}
     </div>
   )
 };
