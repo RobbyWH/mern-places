@@ -1,18 +1,11 @@
 import React from 'react';
 
-interface ActionProps {
-  type: string;
-  inputId: string;
-  isValid: boolean;
-  value: string;
-};
-
 const initialState = (initialInputs: unknown, initialFormValidity: boolean) => ({
   inputs: initialInputs,
   isValid: initialFormValidity,
 })
 
-const formReducer = (state: any, action: ActionProps) => {
+const formReducer = (state: any, action: any) => {
   switch (action.type) {
     case 'INPUT_CHANGE':
       let formIsValid = true;
@@ -34,6 +27,11 @@ const formReducer = (state: any, action: ActionProps) => {
         },
         isValid: formIsValid
       };
+    case 'SET_DATA':
+      return {
+        inputs: action.inputs,
+        isValid: action.formIsValid,
+      };
     default:
       return state;
   };
@@ -50,5 +48,13 @@ export const useForm = (initialInputs: unknown, initialFormValidity: boolean) =>
     })
   }, [dispatch]);
 
-  return [formState, inputHandler];
+  const setFormData = React.useCallback((inputData: unknown, formValidity: boolean) => {
+    dispatch({
+      type: 'SET_DATA',
+      inputs: inputData,
+      formIsValid: formValidity
+    })
+  }, [])
+
+  return [formState, inputHandler, setFormData];
 }

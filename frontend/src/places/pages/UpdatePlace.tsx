@@ -37,18 +37,34 @@ const DUMMY_PLACES = [
 ]
 
 const UpdatePlace = () => {
+  const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const {placeId} = useParams<{placeId: string}>();
-  const identifiedPlace = DUMMY_PLACES.find(p => p.id === placeId);
-  const [formState, inputHandler] = useForm({
+  const [formState, inputHandler, setFormData] = useForm({
     title: {
-      value: identifiedPlace?.title,
+      value: '',
       isValid: true
     },
     description: {
-      value: identifiedPlace?.description,
+      value: '',
       isValid: true
     }
   }, true);
+
+  const identifiedPlace = DUMMY_PLACES.find(p => p.id === placeId);
+
+  React.useEffect(() => {
+    setFormData({
+      title: {
+        value: identifiedPlace?.title,
+        isValid: true
+      },
+      description: {
+        value: identifiedPlace?.description,
+        isValid: true
+      }
+    }, true)
+    setIsLoading(false);
+  }, [setFormData, identifiedPlace])
 
   const placeSubmitHandler = React.useCallback((event) => {
     event.preventDefault();
@@ -59,6 +75,14 @@ const UpdatePlace = () => {
     return (
       <div className="center">
         <h2>Could not find place!</h2>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="center">
+        <h2>Loading...</h2>
       </div>
     );
   }
