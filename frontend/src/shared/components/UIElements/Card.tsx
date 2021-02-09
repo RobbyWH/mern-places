@@ -2,7 +2,7 @@ import React from 'react';
 import './Card.css';
 
 interface CardProps {
-  className: string;
+  className?: string;
   style?: React.CSSProperties;
   children: React.ReactNode;
 }
