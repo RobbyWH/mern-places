@@ -13,8 +13,9 @@ interface InputProps {
   errorText?: string;
   validators?: Validators;
   onInput?: (id: string, value: string, isValid: boolean) => void;
+  initialValue?: string;
+  initialValid?: boolean;
 };
-
 
 interface ActionProps {
   type: string;
@@ -62,9 +63,15 @@ const Input = ({
   element,
   errorText,
   validators,
-  onInput
+  onInput,
+  initialValue,
+  initialValid
 }: InputProps) => {
-  const [inputState, dispatch] = React.useReducer(inputReducer, initialState);
+  const [inputState, dispatch] = React.useReducer(inputReducer, {
+    isTouched: false,
+    value: initialValue || '',
+    isValid: initialValid || false
+  });
   const changeHandler = React.useCallback(event => {
     dispatch({
       type: 'CHANGE',
