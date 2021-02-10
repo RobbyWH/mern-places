@@ -3,6 +3,7 @@ import Button from '../../shared/components/FormElements/Button';
 import Card from '../../shared/components/UIElements/Card';
 import Modal from '../../shared/components/UIElements/Modal';
 import Map from '../../shared/components/UIElements/Map';
+import { AuthContext } from '../../shared/context/authContext';
 import './PlaceItem.css';
 
 interface LocationProps {
@@ -30,7 +31,9 @@ const PlaceItem = ({
   creator,
   location
 }: PlaceItemProps) => {
+  const auth = React.useContext(AuthContext);
   const [showMap, setShowMap] = React.useState(false);
+  const [showConfirmModal, setShowConfirmModal] = React.useState(false);
 
   const openMapHandler = React.useCallback(() => {
     setShowMap(true);
@@ -38,6 +41,19 @@ const PlaceItem = ({
 
   const closeMapHandler = React.useCallback(() => {
     setShowMap(false);
+  }, []);
+
+  const showDeleteWarningHandler = React.useCallback(() => {
+    setShowConfirmModal(true);
+  }, []);
+
+  const cancelDeleteWarningHandler = React.useCallback(() => {
+    setShowConfirmModal(false);
+  }, []);
+
+  const confirmDeleteHandler = React.useCallback(() => {
+    console.log("DELETING");
+    setShowConfirmModal(false);
   }, []);
 
   return (
@@ -53,6 +69,24 @@ const PlaceItem = ({
         <div className="map-container">
           <Map center={location} zoom={16} />
         </div>
+      </Modal>
+      <Modal
+        show={showConfirmModal}
+        onCancel={cancelDeleteWarningHandler}
+        header={"Are you sure?"}
+        contentClass="place-item__modal-content"
+        footerClass="place-item__modal-actions"
+        footer={
+          <>
+            <Button inverse onClick={cancelDeleteWarningHandler}>CANCEL</Button>
+            <Button danger onClick={confirmDeleteHandler}>DELETE</Button>
+          </>
+        }
+      >
+        <p style={{padding: 10}}>
+          Do you want to proceeed and delete this place?
+          Please note that it can't be undonee thereafter.
+        </p>
       </Modal>
       <li className="place-item">
         <Card className="placee-item__content">
@@ -70,8 +104,14 @@ const PlaceItem = ({
               onClick={openMapHandler}>
                 VIEW ON MAP
             </Button>
-            <Button to={`/places/${id}`}>EDIT</Button>
-            <Button danger>DELETE</Button>
+            {
+              auth.isLoggedIn && (
+                <>
+                  <Button to={`/places/${id}`}>EDIT</Button>
+                  <Button danger onClick={showDeleteWarningHandler}>DELETE</Button>
+                </>
+              )
+            }
           </div>
         </Card>
       </li>
