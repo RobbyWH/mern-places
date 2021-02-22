@@ -1,6 +1,8 @@
 import {Request, Response, NextFunction} from 'express';
 import HttpError from '../models/HttpError';
 import { v4 as uuidv4 } from 'uuid';
+import {validationResult} from 'express-validator';
+import {getCoordsForAddress} from '../util/location';
 
 interface CreatedPlaceData {
   id: string;
@@ -26,7 +28,7 @@ interface PatchedPlaceData {
   creator?: string;
 };
 
-const DUMMY_PLACES = [
+let DUMMY_PLACES = [
   {
     id: 'p1',
     title: 'Empire State Building',
@@ -54,27 +56,39 @@ export const getPlaceById = (req: Request, res: Response, next: NextFunction) =>
   });
 };
 
-export const getPlaceByUserId = (req: Request, res: Response, next: NextFunction) => {
+export const getPlacesByUserId = (req: Request, res: Response, next: NextFunction) => {
   const userId = req.params.uid;
-  const place = DUMMY_PLACES.find(place => place.creator === userId)
+  const places = DUMMY_PLACES.filter(place => place.creator === userId)
 
-  if (!place) {
-    const error = new HttpError('could not find a place for the provided user id', 404);
+  if (!places || places.length === 0) {
+    const error = new HttpError('could not find a places for the provided user id', 404);
     return next(error);
   } 
   res.json({
-    place
+    places
   });
 };
 
-export const createPlace = (req: Request, res: Response) => {
+export const createPlace = async (req: Request, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const error = new HttpError('Invalid inputs passed', 422);
+    return next(error);
+  }
+
   const {
     title,
     description,
-    location,
     address,
     creator
   } = req.body;
+
+  let location;
+  try {
+    location = await getCoordsForAddress(address);
+  } catch (error) {
+    return next(error);
+  }
 
   const createdPlace: CreatedPlaceData = {
     id: uuidv4(),
@@ -91,6 +105,12 @@ export const createPlace = (req: Request, res: Response) => {
 };
 
 export const updatePlaceById = (req: Request, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const error = new HttpError('Invalid inputs passed', 422);
+    return next(error);
+  }
+
   const {
     title,
     description,
@@ -109,5 +129,12 @@ export const updatePlaceById = (req: Request, res: Response, next: NextFunction)
 }
 
 export const deletePlace = (req: Request, res: Response, next: NextFunction) => {
-
-}
+  const placeId = req.params.pid;
+  if (!DUMMY_PLACES.find(p => p.id === placeId)) {
+    throw new HttpError('Could not find a place for that id.', 404);
+  }
+  DUMMY_PLACES = DUMMY_PLACES.filter(p => p.id !== placeId);
+  res.status(200).json({
+    message: 'Deleted place.'
+  });
+};
