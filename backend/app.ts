@@ -1,5 +1,7 @@
 import express, {Request, Response, NextFunction} from 'express';
 import bodyParser from 'body-parser';
+import mongoose from 'mongoose';
+
 import placesRoutes from './routes/PlacesRoutes'
 import usersRoutes from './routes/UsersRoutes'
 import HttpError from './models/HttpError';
@@ -31,4 +33,14 @@ app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-app.listen(5000);
+mongoose
+  .connect('mongodb+srv://robbywh:p@ssw0rd@cluster0.32opw.mongodb.net/places?retryWrites=true&w=majority', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+  })
+  .then(() => {
+    app.listen(5000);
+  })
+  .catch(err => {
+    console.log(err);
+  });

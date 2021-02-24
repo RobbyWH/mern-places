@@ -1,75 +1,78 @@
 import {Request, Response, NextFunction} from 'express';
 import HttpError from '../models/HttpError';
-import { v4 as uuidv4 } from 'uuid';
 import {validationResult} from 'express-validator';
 import {getCoordsForAddress} from '../util/location';
+import Place, {PlaceInterface} from '../models/Place'
+import User, {UserInterface} from '../models/User'
+import mongoose from 'mongoose';
 
-interface CreatedPlaceData {
-  id: string;
-  title: string;
-  description: string;
-  location: {
-    lat: number;
-    lng: number;
-  },
-  address: string;
-  creator: string;
-};
-
-interface PatchedPlaceData {
-  // id?: string;
-  title?: string;
-  description?: string;
-  location?: {
-    lat: number;
-    lng: number;
-  },
-  address?: string;
-  creator?: string;
-};
-
-let DUMMY_PLACES = [
-  {
-    id: 'p1',
-    title: 'Empire State Building',
-    description: 'One of the most famous sky scrapers in thee world!',
-    location: {
-      lat: 40.74922,
-      lng: -73.98545
-    },
-    address: '20 W 34th St, New York, NY 10001, United States',
-    creator: 'u1'
-  }
-];
-
-export const getPlaceById = (req: Request, res: Response, next: NextFunction) => {
+export const getPlaceById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const placeId = req.params.pid;
-  const place = DUMMY_PLACES.find(place => placeId === place.id);
+  let place;
+  try {
+    place = await Place.findById(placeId);
+  } catch (err) {
+    const error = new HttpError(
+      'Fetching places failed, please try again alter',
+      500
+    );
+    return next(error);
+  }
   
   if (!place) {
-    const error = new HttpError('could not find a place for the provided id', 404);
+    const error = new HttpError(
+      'could not find a place for the provided id',
+      404
+    );
     return next(error);
   } 
 
   res.json({
-    place
+    place: place.toObject({
+      getters: true
+    })
   });
 };
 
-export const getPlacesByUserId = (req: Request, res: Response, next: NextFunction) => {
+export const getPlacesByUserId = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const userId = req.params.uid;
-  const places = DUMMY_PLACES.filter(place => place.creator === userId)
 
-  if (!places || places.length === 0) {
-    const error = new HttpError('could not find a places for the provided user id', 404);
+  let userWithPlaces;
+  try {
+    userWithPlaces = await User.findById(userId).populate('places');
+  } catch (err) {
+    const error = new HttpError('Something went wrong', 500);
+    return next(error);
+  }
+
+   // @ts-expect-error
+  if (!userWithPlaces || userWithPlaces.places.length === 0) {
+    const error = new HttpError(
+      'could not find a places for the provided user id',
+      404
+    );
     return next(error);
   } 
+
   res.json({
-    places
+    // @ts-expect-error
+    places: userWithPlaces.places.map(place => place.toObject({ getters: true }))
   });
 };
 
-export const createPlace = async (req: Request, res: Response, next: NextFunction) => {
+export const createPlace = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const error = new HttpError('Invalid inputs passed', 422);
@@ -89,22 +92,50 @@ export const createPlace = async (req: Request, res: Response, next: NextFunctio
   } catch (error) {
     return next(error);
   }
-
-  const createdPlace: CreatedPlaceData = {
-    id: uuidv4(),
+  const createdPlaceData: PlaceInterface = {
     title,
     description,
-    location,
     address,
+    location,
+    image: 'https://upload.wikimedia.org/wikipedia/commons/c/c7/Empire_State_Building_from_the_Top_of_the_Rock.jpg',
     creator
   };
+  const createdPlace = new Place(createdPlaceData);
 
-  DUMMY_PLACES.push(createdPlace);
+  let user;
+  try {
+    user = await User.findById(creator);
+  } catch (err) {
+    const error = new HttpError('Creating place failed, please try again', 500);
+    return next(error);
+  }
+
+  if (!user) {
+    const error = new HttpError('Could not find user for provided id', 404);
+    return next(error);
+  }
+
+  try {
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+    await createdPlace.save({ session: sess });
+    // @ts-expect-error
+    user.places.push(createdPlace);
+    await user.save({ session: sess })
+    await sess.commitTransaction();
+  } catch (err) {
+    const error = new HttpError('Creating place failed, please try again', 500);
+    return next(error);
+  }
 
   res.status(201).json({place: createdPlace});
 };
 
-export const updatePlaceById = (req: Request, res: Response, next: NextFunction) => {
+export const updatePlaceById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const error = new HttpError('Invalid inputs passed', 422);
@@ -117,23 +148,78 @@ export const updatePlaceById = (req: Request, res: Response, next: NextFunction)
   } = req.body;
   const placeId = req.params.pid;
 
-  const updatedPlace: PatchedPlaceData = {...DUMMY_PLACES.find(place => place.id === placeId)};
-  const placeIndex = DUMMY_PLACES.findIndex(place => place.id === placeId);
-  updatedPlace.title = title;
-  updatedPlace.description = description;
+  let place;
+  try {
+    place = await Place.findById(placeId);
+  } catch(err) {
+    const error = new HttpError('Something went wrong', 500);
+    return next(error);
+  }
+
+  if (!place) {
+    const error = new HttpError(
+      'could not find a place',
+      404
+    );
+    return next(error);
+  } 
 
   // @ts-expect-error
-  DUMMY_PLACES[placeIndex] = updatedPlace;
+  place.title = title;
+  // @ts-expect-error
+  place.description = description;
 
-  res.status(200).json({place: updatedPlace});
+  try {
+    await place.save();
+  } catch(err) {
+    const error = new HttpError('Something went wrong', 500);
+    return next(error);
+  }
+
+  res.status(200).json({
+    place: place.toObject({
+      getters: true
+    })
+  });
 }
 
-export const deletePlace = (req: Request, res: Response, next: NextFunction) => {
+export const deletePlace =  async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const placeId = req.params.pid;
-  if (!DUMMY_PLACES.find(p => p.id === placeId)) {
-    throw new HttpError('Could not find a place for that id.', 404);
+
+  let place;
+  try {
+    place = await Place.findById(placeId).populate('creator');
+  } catch (err) {
+    const error = new HttpError('Something went wrong', 500);
+    return next(error);
   }
-  DUMMY_PLACES = DUMMY_PLACES.filter(p => p.id !== placeId);
+
+  if (!place) {
+    const error = new HttpError(
+      'could not find a place',
+      404
+    );
+    return next(error);
+  } 
+
+   try {
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+    await place.remove({ session: sess });
+    // @ts-expect-error
+    place.creator.places.pull(place)
+    // @ts-expect-error
+    await place.creator.save({ session: sess })
+    await sess.commitTransaction();
+  } catch(err) {
+    const error = new HttpError('Something went wrong', 500);
+    return next(error);
+  }
+
   res.status(200).json({
     message: 'Deleted place.'
   });
