@@ -15,6 +15,22 @@ const app = express();
 
 app.use(bodyParser.json());
 
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.setHeader(
+    'Access-Control-Allow-Origin',
+    'http://localhost:3000'
+  );
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization'
+  );
+  res.setHeader(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PATCH, DELETE'
+  );
+  next();
+});
+
 app.use('/api/places', placesRoutes);
 app.use('/api/users', usersRoutes);
 
@@ -34,7 +50,7 @@ app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
 });
 
 mongoose
-  .connect('mongodb+srv://robbywh:p@ssw0rd@cluster0.32opw.mongodb.net/places?retryWrites=true&w=majority', {
+  .connect('mongodb+srv://robbywh:p@ssw0rd@cluster0.32opw.mongodb.net/mern?retryWrites=true&w=majority', {
     useNewUrlParser: true,
     useUnifiedTopology: true
   })
