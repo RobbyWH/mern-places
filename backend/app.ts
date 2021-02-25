@@ -50,7 +50,7 @@ app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
 });
 
 mongoose
-  .connect('blabla', {
+  .connect('mongodb+srv://robbywh:p@ssw0rd@cluster0.32opw.mongodb.net/mern?retryWrites=true&w=majority', {
     useNewUrlParser: true,
     useUnifiedTopology: true
   })
