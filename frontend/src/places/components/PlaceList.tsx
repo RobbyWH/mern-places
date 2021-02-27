@@ -7,7 +7,7 @@ import './PlaceList.css';
 
 interface PlaceListProps {
   items: Array<PlaceItemProps>;
-  onDeletePlace: (deeletedPlaceId: string) => void;
+  onDeletePlace: (deletedPlaceId: string) => void;
 }
 
 const PlaceList = ({items, onDeletePlace}: PlaceListProps) => {
