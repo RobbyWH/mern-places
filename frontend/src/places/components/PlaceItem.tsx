@@ -5,6 +5,9 @@ import Modal from '../../shared/components/UIElements/Modal';
 import Map from '../../shared/components/UIElements/Map';
 import { AuthContext } from '../../shared/context/authContext';
 import './PlaceItem.css';
+import { useHttpClient } from '../../shared/hooks/httpHook';
+import ErrorModal from '../../shared/components/UIElements/ErrorModal';
+import LoadingSpinner from '../../shared/components/UIElements/LoadingSpinner';
 
 interface LocationProps {
   lat: number;
@@ -13,24 +16,27 @@ interface LocationProps {
 
 export interface PlaceItemProps {
   id: string;
-  imageUrl: string;
+  image: string;
   title: string;
   description: string;
   address: string;
   creator: string;
-  location: LocationProps
+  location: LocationProps,
+  onDelete: (deletedPlaceId: string) => void
 };
 
 
 const PlaceItem = ({
   id,
-  imageUrl,
+  image,
   title,
   description,
   address,
   creator,
-  location
+  location,
+  onDelete
 }: PlaceItemProps) => {
+  const { isLoading, error, sendRequest, clearError } = useHttpClient();
   const auth = React.useContext(AuthContext);
   const [showMap, setShowMap] = React.useState(false);
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
@@ -51,13 +57,20 @@ const PlaceItem = ({
     setShowConfirmModal(false);
   }, []);
 
-  const confirmDeleteHandler = React.useCallback(() => {
-    console.log("DELETING");
+  const confirmDeleteHandler = React.useCallback(async () => {
     setShowConfirmModal(false);
-  }, []);
+    try {
+      await sendRequest(
+        `http://localhost:5000/api/places/${id}`,
+        'DELETE'
+      );
+      onDelete && onDelete(id);
+    } catch (err) {}
+  }, [sendRequest, id, onDelete]);
 
   return (
     <>
+      <ErrorModal error={error} onClear={clearError} />
       <Modal
         show={showMap}
         onCancel={closeMapHandler}
@@ -90,8 +103,15 @@ const PlaceItem = ({
       </Modal>
       <li className="place-item">
         <Card className="placee-item__content">
+          {
+            isLoading && (
+              <div className="center">
+                <LoadingSpinner asOverlay />
+              </div>
+            )
+          }
           <div className="place-item__image">
-            <img src={imageUrl} alt={title} />
+            <img src={image} alt={title} />
           </div>
           <div className="place-iteem__info">
             <h2>{title}</h2>
@@ -105,7 +125,7 @@ const PlaceItem = ({
                 VIEW ON MAP
             </Button>
             {
-              auth.isLoggedIn && (
+              auth.userId === creator && (
                 <>
                   <Button to={`/places/${id}`}>EDIT</Button>
                   <Button danger onClick={showDeleteWarningHandler}>DELETE</Button>

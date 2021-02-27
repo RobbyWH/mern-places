@@ -14,13 +14,16 @@ import MainNavigation from './shared/components/Navigation/MainNavigation';
 import { AuthContext } from './shared/context/authContext';
 
 const App = () => {
-  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
-  const login = React.useCallback(() => {
+  const [isLoggedIn, setIsLoggedIn] = React.useState<boolean>(false);
+  const [userId, setUserId] = React.useState<null | string>('');
+  const login = React.useCallback((uid: string) => {
     setIsLoggedIn(true);
+    setUserId(uid);
   }, []);
 
   const logout = React.useCallback(() => {
     setIsLoggedIn(false);
+    setUserId(null)
   }, []);
 
   let routes;
@@ -28,17 +31,17 @@ const App = () => {
   if (isLoggedIn) {
     routes = (
       <Switch>
-        <Route exact path="/" >
+        <Route path="/" exact>
           <Users />
         </Route>
-        <Route exact path="/places/new" >
-          <NewPlace />
-        </Route>
-        <Route exact path="/:userId/places" >
+        <Route path="/:userId/places" exact>
           <UserPlaces />
         </Route>
-        <Route exact path="/auth" >
-          <Auth />
+        <Route path="/places/new" exact>
+          <NewPlace />
+        </Route>
+        <Route path="/places/:placeId">
+          <UpdatePlace />
         </Route>
         <Redirect to="/" />
       </Switch>
@@ -46,16 +49,13 @@ const App = () => {
   } else {
     routes = (
       <Switch>
-        <Route exact path="/" >
+        <Route path="/" exact>
           <Users />
         </Route>
-        <Route exact path="/:userId/places" >
+        <Route path="/:userId/places" exact>
           <UserPlaces />
         </Route>
-        <Route path="/places/:placeId" >
-          <UpdatePlace />
-        </Route>
-        <Route exact path="/auth" >
+        <Route path="/auth">
           <Auth />
         </Route>
         <Redirect to="/auth" />
@@ -63,10 +63,12 @@ const App = () => {
     );
   }
 
+
   return (
     <AuthContext.Provider value={{
       isLoggedIn,
       login,
+      userId,
       logout 
     }}>
       <Router>

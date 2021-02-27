@@ -87,6 +87,9 @@ export const login = async (
     return next(error);
   }
 
-  res.json({messagee: 'Loggeed in!'});
+  res.json({
+    messagee: 'Logged in!',
+    user: existingUser.toObject({getters: true})
+  });
 
 };

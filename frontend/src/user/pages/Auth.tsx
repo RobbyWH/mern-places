@@ -10,6 +10,7 @@ import {
   VALIDATOR_REQUIRE
 } from '../../shared/util/validators';
 import { useForm } from '../../shared/hooks/formHook';
+import { useHttpClient } from '../../shared/hooks/httpHook';
 import { AuthContext } from '../../shared/context/authContext';
 import './Auth';
 
@@ -26,8 +27,7 @@ const Auth = () => {
     }
   }, false);
   const [isLoginMode, setIsLoginMode] = React.useState<boolean>(true);
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<string>('');
+  const {isLoading, error, sendRequest, clearError} = useHttpClient();
 
   const switchModeHandler = React.useCallback(() => {
     if (!isLoginMode) {
@@ -49,63 +49,44 @@ const Auth = () => {
 
   const authSubmitHandler = React.useCallback(async (event) => {
     event.preventDefault();
-    setIsLoading(true);
     if (isLoginMode) {
       try {
-        const response = await fetch('http://localhost:5000/api/users/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
+        const responseData = await sendRequest(
+          'http://localhost:5000/api/users/login',
+          'POST',
+          JSON.stringify({
             email: formState.inputs.email.value,
             password: formState.inputs.password.value
-          })
-        });
-        const responseData = await response.json();
-        if (!response.ok) {
-          throw new Error(responseData.message);
-        }
-        setIsLoading(false);
-        auth.login();
-      } catch (err) {
-        setIsLoading(false);
-        setError(err.message || 'Something went wrong');
-      }
+          }),
+          {
+            'Content-Type': 'application/json'
+          }
+        );
+        auth.login(responseData.user.id);
+      } catch (err) {}
     } else {
-      try {
-        const response = await fetch('http://localhost:5000/api/users/signup', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            name: formState.inputs.name.value,
-            email: formState.inputs.email.value,
-            password: formState.inputs.password.value
-          })
-        });
-        const responseData = await response.json();
-        if (!response.ok) {
-          throw new Error(responseData.message);
-        }
-        setIsLoading(false);
-        auth.login();
-      } catch (err) {
-        setIsLoading(false);
-        setError(err.message || 'Something went wrong');
-      } 
+        try {
+          const responseData = await sendRequest(
+            'http://localhost:5000/api/users/signup',
+            'POST',
+            JSON.stringify({
+              name: formState.inputs.name.value,
+              email: formState.inputs.email.value,
+              password: formState.inputs.password.value
+            }),
+            {
+              'Content-Type': 'application/json'
+            }
+          );
+          auth.login(responseData.user.id);
+        } catch (err) {}
     }
-  }, [formState, auth, isLoginMode])
-
-  const errorHandler = React.useCallback(() => {
-    setError('')
-  }, [])
+  }, [formState, auth, isLoginMode, sendRequest])
 
   return (
     <>
       <ErrorModal
-        onClear={errorHandler}
+        onClear={clearError}
         error={error}
       />
       <Card style={{margin: 20}}>
@@ -143,9 +124,9 @@ const Auth = () => {
             element="input"
             id="password"
             validators={[
-              VALIDATOR_MINLENGTH(5)
+              VALIDATOR_MINLENGTH(6)
             ]}
-            errorText="Please enter a password"
+            errorText="Please enter a valid password"
             onInput={inputHandler}
           />
           <Button type="submit" disabled={!formState.isValid}>

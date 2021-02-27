@@ -7,9 +7,10 @@ import './PlaceList.css';
 
 interface PlaceListProps {
   items: Array<PlaceItemProps>;
+  onDeletePlace: (deeletedPlaceId: string) => void;
 }
 
-const PlaceList = ({items}: PlaceListProps) => {
+const PlaceList = ({items, onDeletePlace}: PlaceListProps) => {
   if (items.length === 0) {
     return (
       <div className="place-list center">
@@ -28,12 +29,13 @@ const PlaceList = ({items}: PlaceListProps) => {
           <PlaceItem
             key={place.id}
             id={place.id}
-            imageUrl={place.imageUrl}
+            image={place.image}
             title={place.title}
             description={place.description}
             address={place.address}
             creator={place.creator}
             location={place.location}
+            onDelete={onDeletePlace}
           />
         ))
       }
