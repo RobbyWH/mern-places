@@ -6,7 +6,7 @@ interface UserDataProps {
   id: string;
   image: string;
   name: string;
-  places: number;
+  places: Array<any>;
 };
 
 interface UsersListProps {
@@ -28,7 +28,7 @@ const UsersList = ({items}: UsersListProps) => {
           id={user.id}
           image={user.image}
           name={user.name}
-          placeCount={user.places}
+          placeCount={user.places.length}
         />
       })}
     </ul>

@@ -81,7 +81,6 @@ export const login = async (
     const error = new HttpError('Something went wrong', 500);
     return next(error);
   }
-  console.log(existingUser)
   // @ts-expect-error
   if (!existingUser || existingUser.password !== password) {
     const error = new HttpError('Could not identity user, credentials seem to be wrong', 401);

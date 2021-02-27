@@ -11,11 +11,9 @@ import {
 } from '../../shared/util/validators';
 import { useForm } from '../../shared/hooks/formHook';
 import { AuthContext } from '../../shared/context/authContext';
-import { useHistory } from "react-router-dom";
 import './Auth';
 
 const Auth = () => {
-  const history = useHistory();
   const auth = React.useContext(AuthContext);
   const [formState, inputHandler, setFormData] = useForm({
     email: {
@@ -29,7 +27,7 @@ const Auth = () => {
   }, false);
   const [isLoginMode, setIsLoginMode] = React.useState<boolean>(true);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<boolean>(false);
+  const [error, setError] = React.useState<string>('');
 
   const switchModeHandler = React.useCallback(() => {
     if (!isLoginMode) {
@@ -51,11 +49,31 @@ const Auth = () => {
 
   const authSubmitHandler = React.useCallback(async (event) => {
     event.preventDefault();
+    setIsLoading(true);
     if (isLoginMode) {
-
+      try {
+        const response = await fetch('http://localhost:5000/api/users/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: formState.inputs.email.value,
+            password: formState.inputs.password.value
+          })
+        });
+        const responseData = await response.json();
+        if (!response.ok) {
+          throw new Error(responseData.message);
+        }
+        setIsLoading(false);
+        auth.login();
+      } catch (err) {
+        setIsLoading(false);
+        setError(err.message || 'Something went wrong');
+      }
     } else {
       try {
-        setIsLoading(true);
         const response = await fetch('http://localhost:5000/api/users/signup', {
           method: 'POST',
           headers: {
@@ -76,13 +94,12 @@ const Auth = () => {
       } catch (err) {
         setIsLoading(false);
         setError(err.message || 'Something went wrong');
-      }
-     
+      } 
     }
   }, [formState, auth, isLoginMode])
 
   const errorHandler = React.useCallback(() => {
-    setError(false)
+    setError('')
   }, [])
 
   return (

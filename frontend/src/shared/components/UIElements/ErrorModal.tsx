@@ -5,7 +5,7 @@ import Button from '../FormElements/Button';
 
 interface Props {
   onClear: () => void;
-  error: boolean;
+  error: string;
 };
 
 const ErrorModal = ({onClear, error}: Props) => {
