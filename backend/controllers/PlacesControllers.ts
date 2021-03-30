@@ -3,8 +3,9 @@ import HttpError from '../models/HttpError';
 import {validationResult} from 'express-validator';
 import {getCoordsForAddress} from '../util/location';
 import Place, {PlaceInterface} from '../models/Place'
-import User, {UserInterface} from '../models/User'
+import User from '../models/User'
 import mongoose from 'mongoose';
+import fs from 'fs';
 
 export const getPlaceById = async (
   req: Request,
@@ -97,7 +98,7 @@ export const createPlace = async (
     description,
     address,
     location,
-    image: 'https://upload.wikimedia.org/wikipedia/commons/c/c7/Empire_State_Building_from_the_Top_of_the_Rock.jpg',
+    image: req.file.path,
     creator
   };
   const createdPlace = new Place(createdPlaceData);
@@ -205,8 +206,11 @@ export const deletePlace =  async (
     );
     return next(error);
   } 
-
-   try {
+  
+  // @ts-expect-error
+  const imagePath = place.image || '';
+  
+  try {
     const sess = await mongoose.startSession();
     sess.startTransaction();
     await place.remove({ session: sess });
@@ -219,6 +223,10 @@ export const deletePlace =  async (
     const error = new HttpError('Something went wrong', 500);
     return next(error);
   }
+
+  fs.unlink(imagePath, err => {
+    console.log(err);
+  });
 
   res.status(200).json({
     message: 'Deleted place.'

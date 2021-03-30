@@ -7,6 +7,7 @@ import {
   deletePlace
 } from '../controllers/PlacesControllers';
 import { check } from 'express-validator';
+import fileUpload from '../middleware/fileUpload';
 
 const router = express.Router();
 
@@ -15,6 +16,7 @@ router.get('/:pid', getPlaceById);
 router.get('/user/:uid', getPlacesByUserId);
 
 router.post('/',
+  fileUpload.single('image'),
   [
     check('title')
       .not()

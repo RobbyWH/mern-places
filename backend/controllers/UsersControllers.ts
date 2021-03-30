@@ -50,7 +50,7 @@ export const signup = async (
   const createdUserData: UserInterface = {
     name,
     email,
-    image: 'https://upload.wikimedia.org/wikipedia/commons/c/c7/Empire_State_Building_from_the_Top_of_the_Rock.jpg',
+    image: req.file.path,
     password,
     places: []
   };
@@ -88,7 +88,7 @@ export const login = async (
   }
 
   res.json({
-    messagee: 'Logged in!',
+    message: 'Logged in!',
     user: existingUser.toObject({getters: true})
   });
 
